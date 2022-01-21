@@ -1,2 +1,2 @@
-# OpenLineage-AccesHistory-Setup
+# OpenLineage-AccessHistory-Setup
 Guideline to extract table lineage info in OpenLineage format from access history view 
