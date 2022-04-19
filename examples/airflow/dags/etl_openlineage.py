@@ -18,11 +18,17 @@ def send_ol_events():
     with connect(user=SNOWFLAKE_USER,
                  password=SNOWFLAKE_PASSWORD,
                  account=SNOWFLAKE_ACCOUNT,
-                 database='OPEN_LINEAGE',
+                 database='OPENLINEAGE',
                  schema='PUBLIC') as conn:
         with conn.cursor() as cursor:
-            ol_view = 'OPEN_LINEAGE_ACCESS_HISTORY'
+            ol_view = 'OPENLINEAGE_ACCESS_HISTORY'
             ol_event_time_tag = 'OL_LATEST_EVENT_TIME'
+
+            var_query = f'''
+                set current_organization='{SNOWFLAKE_ACCOUNT}';
+            '''
+
+            cursor.execute(var_query)
 
             ol_query = f'''
                 SELECT * FROM {ol_view}
@@ -58,5 +64,6 @@ with DAG('etl_openlineage',
          schedule_interval='@hourly',
          catchup=False,
          default_args=default_args,
-         description='Send OL events every minutes') as dag:
+         description='Send OL events every minutes',
+         tags=["extract"]) as dag:
     t1 = PythonOperator(task_id='ol_event', python_callable=send_ol_events)
