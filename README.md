@@ -5,7 +5,7 @@ Guideline to extract lineage info in [OpenLineage](https://github.com/OpenLineag
 
 ##  Code Deployment
 
-### OPEN_LINEAGE_ACCESS_HISTORY View
+### OPENLINEAGE_ACCESS_HISTORY View
 
 #### View Defintion
 

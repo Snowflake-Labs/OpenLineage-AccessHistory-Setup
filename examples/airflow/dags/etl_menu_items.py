@@ -3,7 +3,7 @@ from airflow.utils.dates import days_ago
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 
 SNOWFLAKE_WAREHOUSE = 'COMPUTE_WH'
-SNOWFLAKE_DATABASE = 'OPEN_LINEAGE'
+SNOWFLAKE_DATABASE = 'OPENLINEAGE'
 
 default_args = {
     'owner': 'openlineage',
