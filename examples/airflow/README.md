@@ -69,7 +69,7 @@ To do this, copy the `.env-example` file to `.env`, and edit it to provide the a
 % vi .env
 ```
 
-## Running the Example
+## Preparing Airflow
 
 Once the environment is prepared, initialize Airflow with docker-compose:
 ```bash
@@ -82,6 +82,8 @@ This will take several minutes. When it has finished, bring up the Airflow servi
 ```
 
 This will also take several minutes. Eventually, the webserver will be up at [http://localhost:8080](http://localhost:8080). Log in using the default credentials (airflow/airflow) and navigate to the DAGs page. When you see 12 DAGs in the list, you can be confident that Airflow has completed its initialization of the example.
+
+## Running the Example
 
 Each of the DAGs is paused by default. Enable each one, skipping the `etl_openlineage` DAG for now. They may not all run successfully on the first try, since they have interdependencies that this example leaves unmanaged.
 
