@@ -2,7 +2,7 @@
 
 This example uses Airflow to run a collection of Snowflake queries for a fictitious food delivery service. Lineage data for these queries is recorded within Snowflake [ACCESS_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/access_history.html) and, using the OpenLineage Access History View, emitted to an OpenLineage backend.
 
-This is done using a series of DAGs in `dags/queries` that each use SnowflakeOperator to run queries, along with a DAG in `dags/extract` that uses PythonOperator to send generated OpenLineage events to the configured backend.
+This is done using a series of DAGs in `dags/etl` that each use SnowflakeOperator to run queries, along with a DAG in `dags/lineage` that uses PythonOperator to send generated OpenLineage events to the configured backend.
 
 ## Prerequisites
 
