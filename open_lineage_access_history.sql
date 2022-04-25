@@ -5,7 +5,7 @@ Description:        This script creates a view from snowflake.account_usage.acce
                     that output lineage information in a OpenLineage compatible format.
 ************************************************************************************************************************************/
 
-create or replace view OPEN_LINEAGE_ACCESS_HISTORY(
+create or replace view OPENLINEAGE_ACCESS_HISTORY(
 	EVENT
 ) as
     with namespace as (
