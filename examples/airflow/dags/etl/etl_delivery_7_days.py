@@ -1,31 +1,33 @@
+from pendulum import datetime
+
 from airflow import DAG
-from airflow.utils.dates import days_ago
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
+
 
 SNOWFLAKE_WAREHOUSE = 'COMPUTE_WH'
 SNOWFLAKE_DATABASE = 'OPENLINEAGE'
 
-default_args = {
-    'owner': 'openlineage',
-    'depends_on_past': False,
-    'start_date': days_ago(1),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['demo@openlineage.io'],
-    'snowflake_conn_id': 'openlineage_snowflake'
-}
 
-with DAG('etl_delivery_7_days',
-         schedule_interval='@weekly',
-         catchup=False,
-         default_args=default_args,
-         description='Loads new deliveries for the week.') as dag:
+with DAG(
+    'etl_delivery_7_days',
+    start_date=datetime(2022, 4, 12),
+    schedule_interval='@weekly',
+    catchup=False,
+    default_args={
+        'owner': 'openlineage',
+        'depends_on_past': False,
+        'email_on_failure': False,
+        'email_on_retry': False,
+        'email': ['demo@openlineage.io'],
+        'snowflake_conn_id': 'openlineage_snowflake',
+        'warehouse': SNOWFLAKE_WAREHOUSE,
+        'database': SNOWFLAKE_DATABASE,
+    },
+    description='Loads new deliveries for the week.',
+) as dag:
 
     t1 = SnowflakeOperator(
         task_id='if_not_exists_delivery_7_days',
-        dag=dag,
-        warehouse=SNOWFLAKE_WAREHOUSE,
-        database=SNOWFLAKE_DATABASE,
         sql='''
         CREATE TABLE IF NOT EXISTS food_delivery.delivery_7_days (
             order_id            INTEGER,
@@ -47,9 +49,6 @@ with DAG('etl_delivery_7_days',
 
     t2 = SnowflakeOperator(
         task_id='insert',
-        dag=dag,
-        warehouse=SNOWFLAKE_WAREHOUSE,
-        database=SNOWFLAKE_DATABASE,
         sql='''
         INSERT INTO food_delivery.delivery_7_days (
             order_id,
@@ -94,7 +93,7 @@ with DAG('etl_delivery_7_days',
                        ON r.id = os.restaurant_id
                INNER JOIN food_delivery.drivers AS d
                        ON d.id = os.driver_id
-        WHERE  os.transitioned_at >= TIMEADD(hour, -168, current_time()) 
+        WHERE  os.transitioned_at >= TIMEADD(hour, -168, current_time())
         ''',
         session_parameters={
             'QUERY_TAG': 'etl_delivery_7_days'
