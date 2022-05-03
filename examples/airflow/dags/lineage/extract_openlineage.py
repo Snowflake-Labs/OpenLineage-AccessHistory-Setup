@@ -1,9 +1,9 @@
 import json
 import os
+from pendulum import datetime
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.decorators import task
 from openlineage.client import OpenLineageClient
 from snowflake.connector import connect
 
@@ -12,14 +12,17 @@ SNOWFLAKE_PASSWORD = os.getenv('SNOWFLAKE_PASSWORD')
 SNOWFLAKE_ACCOUNT = os.getenv('SNOWFLAKE_ACCOUNT')
 
 
+@task
 def send_ol_events():
     client = OpenLineageClient.from_environment()
 
-    with connect(user=SNOWFLAKE_USER,
-                 password=SNOWFLAKE_PASSWORD,
-                 account=SNOWFLAKE_ACCOUNT,
-                 database='OPENLINEAGE',
-                 schema='PUBLIC') as conn:
+    with connect(
+        user=SNOWFLAKE_USER,
+        password=SNOWFLAKE_PASSWORD,
+        account=SNOWFLAKE_ACCOUNT,
+        database='OPENLINEAGE',
+        schema='PUBLIC',
+    ) as conn:
         with conn.cursor() as cursor:
             ol_view = 'OPENLINEAGE_ACCESS_HISTORY'
             ol_event_time_tag = 'OL_LATEST_EVENT_TIME'
@@ -49,21 +52,20 @@ def send_ol_events():
                 ''')
 
 
-default_args = {
-    'owner': 'openlineage',
-    'depends_on_past': False,
-    'start_date': days_ago(1),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['demo@openlineage.io'],
-    'snowflake_conn_id': 'openlineage_snowflake'
-}
-
-
-with DAG('etl_openlineage',
-         schedule_interval='@hourly',
-         catchup=False,
-         default_args=default_args,
-         description='Send OL events every minutes',
-         tags=["extract"]) as dag:
-    t1 = PythonOperator(task_id='ol_event', python_callable=send_ol_events)
+with DAG(
+    'etl_openlineage',
+    start_date=datetime(2022, 4, 12),
+    schedule_interval='@hourly',
+    catchup=False,
+    default_args={
+        'owner': 'openlineage',
+        'depends_on_past': False,
+        'email_on_failure': False,
+        'email_on_retry': False,
+        'email': ['demo@openlineage.io'],
+        'snowflake_conn_id': 'openlineage_snowflake'
+    },
+    description='Send OL events every minutes.',
+    tags=["extract"],
+) as dag:
+    send_ol_events()
