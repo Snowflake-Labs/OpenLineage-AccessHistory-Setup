@@ -2,6 +2,7 @@ from pendulum import datetime
 
 from airflow import DAG
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
+from airflow.utils.dates import days_ago
 
 
 SNOWFLAKE_WAREHOUSE = 'COMPUTE_WH'
