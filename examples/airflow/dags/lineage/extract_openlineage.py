@@ -28,6 +28,12 @@ def send_ol_events():
             ol_event_time_tag = 'OL_LATEST_EVENT_TIME'
 
             var_query = f'''
+                use warehouse {SNOWFLAKE_WAREHOUSE};
+            '''
+
+            cursor.execute(var_query)
+
+            var_query = f'''
                 set current_organization='{SNOWFLAKE_ACCOUNT}';
             '''
 
