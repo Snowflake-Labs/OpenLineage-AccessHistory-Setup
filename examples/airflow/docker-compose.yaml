@@ -256,5 +256,10 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+networks:
+  default:
+    external: true
+    name: marquez_default
+
 volumes:
   postgres-db-volume:
