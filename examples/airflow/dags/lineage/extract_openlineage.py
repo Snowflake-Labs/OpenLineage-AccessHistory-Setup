@@ -10,7 +10,11 @@ from snowflake.connector import connect
 SNOWFLAKE_USER = os.getenv('SNOWFLAKE_USER')
 SNOWFLAKE_PASSWORD = os.getenv('SNOWFLAKE_PASSWORD')
 SNOWFLAKE_ACCOUNT = os.getenv('SNOWFLAKE_ACCOUNT')
-
+#SNOWFLAKE_DATABASE = os.getenv('SNOWFLAKE_DATABASE')
+#SNOWFLAKE_SCHEMA = os.getenv('SNOWFLAKE_SCHEMA')
+#SNOWFLAKE_WAREHOUSE = os.getenv('SNOWFLAKE_WAREHOUSE')
+SNOWFLAKE_DATABASE = 'OPENLINEAGE'
+SNOWFLAKE_SCHEMA = 'PUBLIC'
 
 @task
 def send_ol_events():
@@ -20,8 +24,8 @@ def send_ol_events():
         user=SNOWFLAKE_USER,
         password=SNOWFLAKE_PASSWORD,
         account=SNOWFLAKE_ACCOUNT,
-        database='OPENLINEAGE',
-        schema='PUBLIC',
+        database=SNOWFLAKE_DATABASE,
+        schema=SNOWFLAKE_SCHEMA,
     ) as conn:
         with conn.cursor() as cursor:
             ol_view = 'OPENLINEAGE_ACCESS_HISTORY'
