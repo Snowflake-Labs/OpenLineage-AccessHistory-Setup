@@ -3,7 +3,6 @@ from pendulum import datetime
 
 from airflow import DAG
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
-from airflow.utils.dates import days_ago
 
 SNOWFLAKE_WAREHOUSE = os.getenv('SNOWFLAKE_WAREHOUSE')
 SNOWFLAKE_DATABASE = os.getenv('SNOWFLAKE_DATABASE')
@@ -17,7 +16,6 @@ with DAG(
     default_args={
         'owner': 'openlineage',
         'depends_on_past': False,
-        'start_date': days_ago(1),
         'email_on_failure': False,
         'email_on_retry': False,
         'email': ['demo@openlineage.io'],
