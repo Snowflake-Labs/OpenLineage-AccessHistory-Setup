@@ -87,6 +87,8 @@ This will also take several minutes. Eventually, the webserver will be up at [ht
 
 Each of the DAGs is paused by default. Enable each one, skipping the `etl_openlineage` DAG for now. They may not all run successfully on the first try, since they have interdependencies that this example leaves unmanaged.
 
+![](./snowflake-airflow-example.png)
+
 After each DAG has completed at least one successful run, enable `etl_openlineage`. Wait for it to complete its run.
 
 ## Result
