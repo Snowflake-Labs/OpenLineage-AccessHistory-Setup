@@ -5,6 +5,10 @@ Description:        This script creates a view from snowflake.account_usage.acce
                     that output lineage information in a OpenLineage compatible format.
 ************************************************************************************************************************************/
 
+SET current_organization = '{{ params.SNOWFLAKE_ACCOUNT }}';
+set producer='{{ params.PRODUCER }}';
+set schema_uri='{{ params.SCHEMA_URI }}';
+create schema if not exists {{ params.SNOWFLAKE_SCHEMA }};
 create or replace view OPENLINEAGE_ACCESS_HISTORY(
 	EVENT
 ) as
@@ -57,7 +61,7 @@ create or replace view OPENLINEAGE_ACCESS_HISTORY(
                 else object_construct(
                     'namespace', concat((select * from namespace), '/', flattened_input:"objectDomain"::string),
                     'name', flattened_input:"objectName"::string,
-                    'facets', object_construct('schema', object_construct('fields', formatted_columns))
+                    'facets', object_construct('schema', object_construct('fields', formatted_columns, '_producer', $producer, '_schemaURL', $schema_uri))
                 )
                 end
             ) as inputs
@@ -97,7 +101,7 @@ create or replace view OPENLINEAGE_ACCESS_HISTORY(
                 else object_construct(
                     'namespace', concat((select * from namespace), '/', flattened_output:"objectDomain"::string),
                     'name', flattened_output:"objectName"::string,
-                    'facets', object_construct('schema', object_construct('fields', formatted_columns))
+                    'facets', object_construct('schema', object_construct('fields', formatted_columns, '_producer', $producer, '_schemaURL', $schema_uri))
                 )
                 end
             ) as outputs
@@ -126,5 +130,7 @@ create or replace view OPENLINEAGE_ACCESS_HISTORY(
             'outputs', outputs,
             'producer', 'https://github.com/OpenLineage/OpenLineage/tree/main/client'
         ) as event
-    from aggregated_outputs
-;
+    from aggregated_outputs;
+
+create tag if not exists OL_LATEST_EVENT_TIME;
+alter view {{ params.SNOWFLAKE_SCHEMA }}.OPENLINEAGE_ACCESS_HISTORY set tag OL_LATEST_EVENT_TIME = '1970-01-01T00:00:00.000';
