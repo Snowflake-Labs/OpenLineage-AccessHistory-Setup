@@ -17,49 +17,26 @@ First, check out the Marquez repository:
 Then, run Marquez in detached mode:
 ```bash
 % docker/up.sh -d
-%
 ```
 
 ### Preparing Snowflake
 
-First, check out the OpenLineage Access History View repository:
-```bash
-% git clone https://github.com/Snowflake-Labs/OpenLineage-AccessHistory-Setup.git
-% cd OpenLineage-AccessHistory-Setup
-```
-
-The `OPENLINEAGE` database and `FOOD_DELIVERY` schema in Snowflake need to be created to run this example. This can be done using the SnowSQL command-line tool, or by pasting the queries into a new Snowflake Worksheet. This README will include instructions using SnowSQL.
-
+In case you don't have Snowflake database dedicated for the demo you should create one and set it as `SNOWFLAKE_DB` environment variable.
+You can do it e.g. using SnowSQL:
 ```bash
 % snowsql -u <snowflake-user> -a <snowflake-account>
-SnowSQL> CREATE DATABASE OPENLINEAGE;
-SnowSQL> CREATE SCHEMA OPENLINEAGE.FOOD_DELIVERY;
-```
-
-The view defined in `open_lineage_access_history.sql` also needs to be created. This view represents the entries in `ACCESS_HISTORY` as specially-constructed JSON objects containing RunEvents that can be emitted to an OpenLineage backend. To create it, use SnowSQL to set the `current_organization` session variable and execute the SQL file.
-
-```bash
-SnowSQL> SET current_organization='<snowflake-organization>';
-SnowSQL> USE SCHEMA OPENLINEAGE.PUBLIC;
-SnowSQL> !source open_lineage_access_history.sql
-```
-
-Finally, our lineage extraction DAG relies upon a tag on the view to keep track of which lineage events have been processed. This tag needs to be initialized:
-
-```bash
-SnowSQL> CREATE TAG OL_LATEST_EVENT_TIME;
-SnowSQL> ALTER VIEW OPENLINEAGE.PUBLIC.OPENLINEAGE_ACCESS_HISTORY SET TAG OL_LATEST_EVENT_TIME = '1970-01-01T00:00:00.000';
-SnowSQL> !quit
-%
+SnowSQL> CREATE DATABASE <snowflake-database>;
 ```
 
 ## Preparing the Environment
 The following environment variables need to be set in order for the query DAGs to connect to Snowflake, and so that the extraction DAG can send lineage events to your OpenLineage backend:
 * SNOWFLAKE_USER
-* SNOWFLAKE_PASSWORD
 * SNOWFLAKE_ACCOUNT
+* SNOWFLAKE_PASSWORD
+* SNOWFLAKE_DB
+* SNOWFLAKE_SCHEMA
+* SNOWFLAKE_WAREHOUSE
 * OPENLINEAGE_URL
-* AIRFLOW_CONN_OPENLINEAGE_SNOWFLAKE
 
 To do this, copy the `.env-example` file to `.env`, and edit it to provide the appropriate values for your environment. The variables in this file will be set for each service in the Airflow deployment.
 
@@ -71,25 +48,26 @@ To do this, copy the `.env-example` file to `.env`, and edit it to provide the a
 
 ## Preparing Airflow
 
-Once the environment is prepared, initialize Airflow with docker-compose:
-```bash
-% docker-compose up airflow-init
-```
-
-This will take several minutes. When it has finished, bring up the Airflow services:
+Once the environment is prepared, bring up the Airflow services:
 ```bash
 % docker-compose up
 ```
+By default Apache Airflow 2.5.0 version is used.
 
-This will also take several minutes. Eventually, the webserver will be up at [http://localhost:8080](http://localhost:8080). Log in using the default credentials (airflow/airflow) and navigate to the DAGs page. When you see 12 DAGs in the list, you can be confident that Airflow has completed its initialization of the example.
+You can also set `AIRFLOW_UID` and `AIRFLOW_IMAGE` of your choice:
+```bash
+% AIRFLOW_UID=0 AIRFLOW_IMAGE=apache/airflow:2.2.4-python3.7 docker-compose up
+```
+
+This will take several minutes. Eventually, the webserver will be up at [http://localhost:8080](http://localhost:8080). Log in using the default credentials (airflow/airflow) and navigate to the DAGs page. When you see 13 DAGs in the list, you can be confident that Airflow has completed its initialization of the example.
 
 ## Running the Example
 
-Each of the DAGs is paused by default. Enable each one, skipping the `etl_openlineage` DAG for now. They may not all run successfully on the first try, since they have interdependencies that this example leaves unmanaged.
+All of the DAGs but `etl_openlineage` start running by default. They have cross-DAG dependencies set so that they run in particular order. In case `prepare_snowflake_objects` DAG failed for some reason (e.g. you have not set any of required environment variables) you should clear / trigger manually the DAG again.
 
 ![](./snowflake-airflow-example.png)
 
-After each DAG has completed at least one successful run, enable `etl_openlineage`. Wait for it to complete its run.
+Once each DAG has completed, please enable `etl_openlineage`. Wait for it to complete its run.
 
 ## Result
 

@@ -1,35 +1,46 @@
-import os
 from pendulum import datetime
 
 from airflow import DAG
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
-
-
-SNOWFLAKE_WAREHOUSE = os.getenv('SNOWFLAKE_WAREHOUSE')
-SNOWFLAKE_DATABASE = os.getenv('SNOWFLAKE_DATABASE')
+from airflow.sensors.external_task import ExternalTaskSensor
+from airflow.utils.state import State
+from airflow.decorators import task_group
+from utils import _get_execution_date_of
 
 
 with DAG(
-    'etl_order_7_days',
+    "etl_order_7_days",
     start_date=datetime(2022, 4, 12),
-    schedule_interval='@weekly',
+    schedule_interval="@weekly",
     catchup=False,
     default_args={
-        'owner': 'openlineage',
-        'depends_on_past': False,
-        'email_on_failure': False,
-        'email_on_retry': False,
-        'email': ['demo@openlineage.io'],
-        'snowflake_conn_id': 'openlineage_snowflake',
-        'warehouse': SNOWFLAKE_WAREHOUSE,
-        'database': SNOWFLAKE_DATABASE,
+        "owner": "openlineage",
+        "depends_on_past": False,
+        "email_on_failure": False,
+        "email_on_retry": False,
+        "email": ["demo@openlineage.io"],
+        "snowflake_conn_id": "openlineage_snowflake",
     },
-    description='Loads placed orders weekly.',
+    description="Loads placed orders weekly.",
 ) as dag:
 
+    @task_group(group_id="wait_for_upstream")
+    def wait_for_upstream():
+        for dag_id in ["etl_categories", "etl_menus", "etl_menu_items", "etl_orders"]:
+            ExternalTaskSensor(
+                task_id="wait_for_dag_" + dag_id,
+                external_dag_id=dag_id,
+                failed_states=[State.FAILED],
+                execution_date_fn=_get_execution_date_of(dag_id),
+                poke_interval=5,
+                mode="reschedule",
+            )
+
+    wait_group = wait_for_upstream()
+
     t1 = SnowflakeOperator(
-        task_id='if_not_exists_orders_7_days',
-        sql='''
+        task_id="if_not_exists_orders_7_days",
+        sql="""
         CREATE TABLE IF NOT EXISTS food_delivery.orders_7_days (
             order_id      INTEGER,
             placed_on     TIME,
@@ -39,12 +50,12 @@ with DAG(
             menu_item_id  INTEGER,
             category_id   INTEGER
         )
-        '''
+        """,
     )
 
     t2 = SnowflakeOperator(
-        task_id='insert',
-        sql='''
+        task_id="insert",
+        sql="""
         INSERT INTO food_delivery.orders_7_days (
             order_id,
             placed_on,
@@ -69,10 +80,8 @@ with DAG(
                inner join food_delivery.menus AS m
                        ON m.id = c.menu_id
         WHERE  o.placed_on >= TIMEADD(hour, -168, current_time())
-        ''',
-        session_parameters={
-            'QUERY_TAG': 'etl_order_7_days'
-        }
+        """,
+        session_parameters={"QUERY_TAG": "etl_order_7_days"},
     )
 
-    t1 >> t2
+    wait_group >> t1 >> t2
